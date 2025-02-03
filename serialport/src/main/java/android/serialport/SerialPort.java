@@ -203,6 +203,8 @@ public final class SerialPort {
 
     public native void close();
 
+    // JNI
+    public native void setParity(int parity);
     /** 关闭流和串口，已经try-catch */
     public void tryClose() {
         try {

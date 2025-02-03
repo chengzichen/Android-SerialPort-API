@@ -102,6 +102,53 @@ static speed_t getBaudrate(jint baudrate) {
 
 /*
  * Class:     android_serialport_SerialPort
+ * Method:    setParity
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_android_serialport_SerialPort_setParity
+        (JNIEnv *env, jobject thiz, jint parity) {
+
+    jclass SerialPortClass = (*env)->GetObjectClass(env, thiz);
+    jclass FileDescriptorClass = (*env)->FindClass(env, "java/io/FileDescriptor");
+
+    jfieldID mFdID = (*env)->GetFieldID(env, SerialPortClass, "mFd", "Ljava/io/FileDescriptor;");
+    jfieldID descriptorID = (*env)->GetFieldID(env, FileDescriptorClass, "descriptor", "I");
+
+    jobject mFd = (*env)->GetObjectField(env, thiz, mFdID);
+    jint descriptor = (*env)->GetIntField(env, mFd, descriptorID);
+
+    struct termios cfg;
+    if (tcgetattr(descriptor, &cfg)) {
+        LOGE("tcgetattr() failed");
+        return;
+    }
+
+    switch (parity) {
+        case 0:
+            cfg.c_cflag &= ~PARENB;    //无奇偶校验
+            break;
+        case 1:
+            cfg.c_cflag |= (PARODD | PARENB);   //奇校验
+            break;
+        case 2:
+            cfg.c_iflag &= ~(IGNPAR | PARMRK); // 偶校验
+            cfg.c_iflag |= INPCK;
+            cfg.c_cflag |= PARENB;
+            cfg.c_cflag &= ~PARODD;
+            break;
+        default:
+            cfg.c_cflag &= ~PARENB;
+            break;
+    }
+
+    if (tcsetattr(descriptor, TCSANOW, &cfg)) {
+        LOGE("tcsetattr() failed");
+    }
+}
+
+
+/*
+ * Class:     android_serialport_SerialPort
  * Method:    open
  * Signature: (Ljava/lang/String;II)Ljava/io/FileDescriptor;
  */
